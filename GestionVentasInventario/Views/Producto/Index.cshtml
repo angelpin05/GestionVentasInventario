@@ -1,0 +1,81 @@
+﻿@model IEnumerable<GestionVentasInventario.Models.Producto>
+@{
+    ViewData["Title"] = "Productos";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Productos</h2>
+        <a asp-action="Crear" class="btn btn-primary">+ Nuevo Producto</a>
+    </div>
+
+    @if (TempData["Exito"] != null)
+    {
+        <div class="alert alert-success">@TempData["Exito"]</div>
+    }
+
+    <table class="table table-bordered table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Imagen</th>
+                <th>Nombre</th>
+                <th>Categoría</th>
+                <th>Precio</th>
+                <th>Stock</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>
+                        @if (!string.IsNullOrEmpty(item.ImagenUrl))
+                        {
+                            <img src="@item.ImagenUrl" alt="@item.Nombre"
+                                 style="width:50px;height:50px;object-fit:cover;" />
+                        }
+                        else
+                        {
+                            <span class="text-muted">Sin imagen</span>
+                        }
+                    </td>
+                    <td>@item.Nombre</td>
+                    <td>@item.Categoria?.Nombre</td>
+                    <td>S/ @item.Precio.ToString("0.00")</td>
+                    <td>
+                        @if (item.Stock <= 5)
+                        {
+                            <span class="badge bg-danger">@item.Stock</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success">@item.Stock</span>
+                        }
+                    </td>
+                    <td>
+                        @if (item.Estado)
+                        {
+                            <span class="badge bg-success">Activo</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger">Inactivo</span>
+                        }
+                    </td>
+                    <td>
+                        <a asp-action="Editar" asp-route-id="@item.ID"
+                           class="btn btn-sm btn-warning">Editar</a>
+                        @if (item.Estado)
+                        {
+                            <a asp-action="Eliminar" asp-route-id="@item.ID"
+                               class="btn btn-sm btn-danger"
+                               onclick="return confirm('¿Desactivar este producto?')">Desactivar</a>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

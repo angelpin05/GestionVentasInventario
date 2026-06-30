@@ -1,0 +1,80 @@
+﻿@model IEnumerable<GestionVentasInventario.Models.Cliente>
+@{
+    ViewData["Title"] = "Clientes";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Clientes</h2>
+        <a asp-action="Crear" class="btn btn-primary">+ Nuevo Cliente</a>
+    </div>
+
+    @if (TempData["Exito"] != null)
+    {
+        <div class="alert alert-success">@TempData["Exito"]</div>
+    }
+
+    <div class="mb-3">
+        <input type="text" id="buscador" class="form-control"
+               placeholder="Buscar por nombre o DNI..." />
+    </div>
+
+    <table class="table table-bordered table-hover" id="tablaClientes">
+        <thead class="table-dark">
+            <tr>
+                <th>#</th>
+                <th>Nombre Completo</th>
+                <th>DNI</th>
+                <th>Email</th>
+                <th>Teléfono</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.ID</td>
+                    <td>@item.NombreCompleto</td>
+                    <td>@item.DNI</td>
+                    <td>@item.Email</td>
+                    <td>@item.Telefono</td>
+                    <td>
+                        @if (item.Estado)
+                        {
+                            <span class="badge bg-success">Activo</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger">Inactivo</span>
+                        }
+                    </td>
+                    <td>
+                        <a asp-action="Editar" asp-route-id="@item.ID"
+                           class="btn btn-sm btn-warning">Editar</a>
+                        @if (item.Estado)
+                        {
+                            <a asp-action="Eliminar" asp-route-id="@item.ID"
+                               class="btn btn-sm btn-danger"
+                               onclick="return confirm('¿Desactivar este cliente?')">Desactivar</a>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('buscador').addEventListener('keyup', function () {
+            const filtro = this.value.toLowerCase();
+            const filas = document.querySelectorAll('#tablaClientes tbody tr');
+            filas.forEach(fila => {
+                const texto = fila.innerText.toLowerCase();
+                fila.style.display = texto.includes(filtro) ? '' : 'none';
+            });
+        });
+    </script>
+}

@@ -1,0 +1,35 @@
+﻿@model List<GestionVentasInventario.Models.ViewModels.CarritoItem>
+
+@if (!Model.Any())
+{
+    <p class="text-muted text-center">El carrito está vacío.</p>
+}
+else
+{
+    <table class="table table-sm">
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Cant.</th>
+                <th>Subtotal</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.Nombre</td>
+                    <td>@item.Cantidad</td>
+                    <td>S/ @item.Subtotal.ToString("0.00")</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger"
+                                onclick="quitarDelCarrito(@item.ProductoID)">
+                            ×
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

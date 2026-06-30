@@ -1,0 +1,211 @@
+﻿@{
+    ViewData["Title"] = "Reportes";
+}
+
+<div class="container mt-4">
+    <h2 class="mb-4">Reportes y Estadísticas</h2>
+
+    <!-- Tarjetas de resumen -->
+    <div class="row mb-4" id="tarjetasResumen">
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body text-center">
+                    <h6 class="card-title">Total Ventas</h6>
+                    <h3 id="totalVentas">--</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-success">
+                <div class="card-body text-center">
+                    <h6 class="card-title">Ingresos Totales</h6>
+                    <h3 id="ingresoTotal">--</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-info">
+                <div class="card-body text-center">
+                    <h6 class="card-title">Clientes Activos</h6>
+                    <h3 id="totalClientes">--</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-warning">
+                <div class="card-body text-center">
+                    <h6 class="card-title">Stock Bajo (≤5)</h6>
+                    <h3 id="productosStockBajo">--</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos fila 1 -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    Ventas por Mes (últimos 6 meses)
+                </div>
+                <div class="card-body">
+                    <canvas id="chartVentasMes" height="120"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    Ventas por Método de Pago
+                </div>
+                <div class="card-body">
+                    <canvas id="chartMetodoPago" height="220"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos fila 2 -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    Top 5 Productos Más Vendidos
+                </div>
+                <div class="card-body">
+                    <canvas id="chartProductos" height="180"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    Cantidad de Ventas por Mes
+                </div>
+                <div class="card-body">
+                    <canvas id="chartCantidadVentas" height="180"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Colores reutilizables
+        const colores = [
+            'rgba(54, 162, 235, 0.8)',
+            'rgba(255, 99, 132, 0.8)',
+            'rgba(75, 192, 192, 0.8)',
+            'rgba(255, 206, 86, 0.8)',
+            'rgba(153, 102, 255, 0.8)'
+        ];
+
+        // Cargar resumen general
+        fetch('/Reporte/ResumenGeneral')
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('totalVentas').textContent = data.totalVentas;
+                document.getElementById('ingresoTotal').textContent = 'S/ ' + data.ingresoTotal.toFixed(2);
+                document.getElementById('totalClientes').textContent = data.totalClientes;
+                document.getElementById('productosStockBajo').textContent = data.productosStockBajo;
+            });
+
+        // Gráfico: Ventas por mes (barras)
+        fetch('/Reporte/VentasPorMes')
+            .then(r => r.json())
+            .then(data => {
+                new Chart(document.getElementById('chartVentasMes'), {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Ingresos (S/)',
+                            data: data.totales,
+                            backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+            });
+
+        // Gráfico: Cantidad de ventas por mes (línea)
+        fetch('/Reporte/VentasPorMes')
+            .then(r => r.json())
+            .then(data => {
+                new Chart(document.getElementById('chartCantidadVentas'), {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Cantidad de ventas',
+                            data: data.cantidades,
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+            });
+
+        // Gráfico: Productos más vendidos (barras horizontales)
+        fetch('/Reporte/ProductosMasVendidos')
+            .then(r => r.json())
+            .then(data => {
+                new Chart(document.getElementById('chartProductos'), {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Unidades vendidas',
+                            data: data.valores,
+                            backgroundColor: colores,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: { x: { beginAtZero: true } }
+                    }
+                });
+            });
+
+        // Gráfico: Método de pago (dona)
+        fetch('/Reporte/VentasPorMetodoPago')
+            .then(r => r.json())
+            .then(data => {
+                new Chart(document.getElementById('chartMetodoPago'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            data: data.valores,
+                            backgroundColor: colores,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        }
+                    }
+                });
+            });
+    </script>
+}

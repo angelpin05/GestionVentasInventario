@@ -1,0 +1,194 @@
+﻿@using GestionVentasInventario.Models.ViewModels
+@{
+    ViewData["Title"] = "Nueva Venta";
+    var productos = ViewBag.Productos as IEnumerable<GestionVentasInventario.Models.Producto>;
+    var carrito = ViewBag.Carrito as List<CarritoItem> ?? new List<CarritoItem>();
+    decimal total = ViewBag.Total ?? 0;
+}
+
+<div class="container mt-4">
+    <h2>Nueva Venta</h2>
+    <hr />
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <div class="row">
+        <!-- Panel izquierdo: Productos -->
+        <div class="col-md-7">
+            <div class="card mb-3">
+                <div class="card-header bg-dark text-white">Productos disponibles</div>
+                <div class="card-body">
+                    <input type="text" id="buscadorProducto" class="form-control mb-3"
+                           placeholder="Buscar producto..." />
+                    <div style="max-height:400px; overflow-y:auto;">
+                        <table class="table table-sm table-hover" id="tablaProductos">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Precio</th>
+                                    <th>Stock</th>
+                                    <th>Cant.</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var p in productos!)
+                                {
+                                    <tr>
+                                        <td>@p.Nombre</td>
+                                        <td>S/ @p.Precio.ToString("0.00")</td>
+                                        <td>@p.Stock</td>
+                                        <td>
+                                            <input type="number" min="1" max="@p.Stock" value="1"
+                                                   class="form-control form-control-sm"
+                                                   id="cant_@p.ID" style="width:70px;" />
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-success"
+                                                    onclick="agregarAlCarrito(@p.ID)">
+                                                +
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel derecho: Carrito -->
+        <div class="col-md-5">
+            <div class="card">
+                <div class="card-header bg-primary text-white">Carrito</div>
+                <div class="card-body">
+                    <div id="carritoContenido">
+                        @await Html.PartialAsync("_Carrito", carrito)
+                    </div>
+                    <hr />
+                    <h5 class="text-end">Total: S/ <span id="totalCarrito">@total.ToString("0.00")</span></h5>
+                </div>
+            </div>
+
+            <!-- Confirmar venta -->
+            <div class="card mt-3">
+                <div class="card-header bg-success text-white">Confirmar Venta</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Buscar cliente por DNI</label>
+                        <div class="input-group">
+                            <input type="text" id="dniBuscar" class="form-control" maxlength="8" placeholder="DNI..." />
+                            <button class="btn btn-outline-secondary" onclick="buscarCliente()">Buscar</button>
+                        </div>
+                        <small id="clienteInfo" class="text-success mt-1 d-block"></small>
+                    </div>
+
+                    <form asp-action="Confirmar" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="clienteId" id="clienteId" value="0" />
+
+                        <div class="mb-3">
+                            <label class="form-label">Método de Pago</label>
+                            <select name="metodoPago" class="form-select">
+                                <option value="Efectivo">Efectivo</option>
+                                <option value="Tarjeta">Tarjeta</option>
+                                <option value="Yape">Yape</option>
+                                <option value="Plin">Plin</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100"
+                                onclick="return validarVenta()">
+                            Confirmar Venta
+                        </button>
+                    </form>
+                    <button class="btn btn-outline-danger w-100 mt-2"
+                            onclick="limpiarCarrito()">
+                        Limpiar carrito
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function agregarAlCarrito(productoId) {
+            const cantidad = parseInt(document.getElementById('cant_' + productoId).value);
+            fetch('/Venta/AgregarAlCarrito', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `productoId=${productoId}&cantidad=${cantidad}`
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.exito) {
+                    actualizarCarrito();
+                } else {
+                    alert(data.mensaje);
+                }
+            });
+        }
+
+        function quitarDelCarrito(productoId) {
+            fetch('/Venta/QuitarDelCarrito', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `productoId=${productoId}`
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.exito) actualizarCarrito();
+            });
+        }
+
+        function actualizarCarrito() {
+            fetch('/Venta/Crear')
+            .then(r => r.text())
+            .then(() => location.reload());
+        }
+
+        function limpiarCarrito() {
+            if (!confirm('¿Limpiar el carrito?')) return;
+            fetch('/Venta/LimpiarCarrito', { method: 'POST' })
+            .then(r => r.json())
+            .then(() => location.reload());
+        }
+
+        function buscarCliente() {
+            const dni = document.getElementById('dniBuscar').value;
+            if (dni.length !== 8) { alert('El DNI debe tener 8 dígitos.'); return; }
+            fetch(`/Cliente/BuscarPorDni?dni=${dni}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.encontrado) {
+                    document.getElementById('clienteId').value = data.cliente.id;
+                    document.getElementById('clienteInfo').textContent =
+                        `✓ ${data.cliente.nombreCompleto}`;
+                } else {
+                    document.getElementById('clienteId').value = 0;
+                    document.getElementById('clienteInfo').textContent = '';
+                    alert('Cliente no encontrado.');
+                }
+            });
+        }
+
+        function validarVenta() {
+            const clienteId = parseInt(document.getElementById('clienteId').value);
+            if (clienteId === 0) { alert('Debe seleccionar un cliente.'); return false; }
+            return true;
+        }
+
+        document.getElementById('buscadorProducto').addEventListener('keyup', function () {
+            const filtro = this.value.toLowerCase();
+            document.querySelectorAll('#tablaProductos tbody tr').forEach(fila => {
+                fila.style.display = fila.innerText.toLowerCase().includes(filtro) ? '' : 'none';
+            });
+        });
+    </script>
+}
